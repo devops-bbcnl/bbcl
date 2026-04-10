@@ -7,11 +7,14 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const mailApiPort = env.MAIL_API_PORT || "3001";
+  // Dev server port: use Vite default (5173), not 8080 — Netlify sets PORT=8080 during
+  // builds and secret scanning flags matching literals in repo/build output.
+  const devServerPort = Number.parseInt(env.VITE_DEV_SERVER_PORT || "", 10) || 5173;
 
   return {
     server: {
       host: "::",
-      port: 8080,
+      port: devServerPort,
       hmr: {
         overlay: false,
       },

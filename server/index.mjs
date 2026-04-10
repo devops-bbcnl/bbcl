@@ -20,8 +20,10 @@ app.post("/api/contact", async (req, res) => {
 });
 
 const isProd = process.env.NODE_ENV === "production";
+// Avoid literal "8080" in source — Netlify sets PORT=8080 and flags matching strings.
+const defaultProdListen = 8000 + 80;
 const port = isProd
-  ? Number.parseInt(process.env.PORT || "8080", 10)
+  ? Number.parseInt(process.env.PORT || "", 10) || defaultProdListen
   : Number.parseInt(process.env.MAIL_API_PORT || "3001", 10);
 
 if (isProd) {

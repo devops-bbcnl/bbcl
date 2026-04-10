@@ -7,6 +7,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # PORT / MAIL_TO often collide with harmless literals or public UI text; omit if needed.
+  # Prefer: scope MAIL_TO to Functions only; use VITE_PUBLIC_CONTACT_EMAIL for the public email in Build.
+  SECRETS_SCAN_OMIT_KEYS = "PORT,MAIL_TO"
 
 [functions]
   directory = "netlify/functions"

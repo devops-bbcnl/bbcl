@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const publicEmail = import.meta.env.VITE_PUBLIC_CONTACT_EMAIL?.trim();
+
 const ContactSection = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,9 @@ const ContactSection = () => {
 
             <div className="space-y-6">
               {[
-                { icon: Mail, label: "contact@bubblebarrel.dev", href: "mailto:contact@bubblebarrel.dev" },
+                ...(publicEmail
+                  ? [{ icon: Mail, label: publicEmail, href: `mailto:${publicEmail}` as const }]
+                  : []),
                 { icon: Phone, label: "+234(803) 767-4195", href: "tel:+2348037674195" },
                 { icon: MapPin, label: "Available Worldwide" },
               ].map(({ icon: Icon, label, href }) => (
