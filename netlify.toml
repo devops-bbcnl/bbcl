@@ -7,9 +7,17 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # PORT / MAIL_TO often collide with harmless literals or public UI text; omit if needed.
-  # Prefer: scope MAIL_TO to Functions only; use VITE_PUBLIC_CONTACT_EMAIL for the public email in Build.
-  SECRETS_SCAN_OMIT_KEYS = "PORT,MAIL_TO"
+
+  # --- Netlify Secrets Controller (build-time env; same as UI “Environment variables”) ---
+  # Docs: https://docs.netlify.com/build/environment-variables/secrets-controller/#configure-secret-scanning
+  #
+  # Comma-separated env *names* whose values should not be searched for in repo + build output.
+  # Use when a value is public (e.g. contact email) or matches harmless literals (e.g. PORT=8080 vs dev config).
+  SECRETS_SCAN_OMIT_KEYS = "PORT,MAIL_TO,SMTP_PORT,MAIL_API_PORT, VITE_PUBLIC_CONTACT_EMAIL"
+
+  # Optional: comma-separated paths (repo-relative; substrings or globs) excluded from scanning.
+  # Uncomment only if you still get false positives after OMIT_KEYS.
+  # SECRETS_SCAN_OMIT_PATHS = "vite.config.ts,server/index.mjs,lib/**"
 
 [functions]
   directory = "netlify/functions"
