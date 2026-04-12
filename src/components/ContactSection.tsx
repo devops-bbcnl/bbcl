@@ -78,7 +78,7 @@ const ContactSection = () => {
                 ...(publicEmail
                   ? [{ icon: Mail, label: publicEmail, href: `mailto:${publicEmail}` as const }]
                   : []),
-                { icon: Phone, label: "+234(803) 767-4195", href: "tel:+2348037674195" },
+                { icon: Phone, label: "+234(707) 890-1075", href: "tel:+2347078901075" },
                 { icon: MapPin, label: "Available Worldwide" },
               ].map(({ icon: Icon, label, href }) => (
                 <div key={label} className="flex items-center gap-4">
