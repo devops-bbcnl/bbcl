@@ -6,7 +6,7 @@
 # and installs from the repo root, then runs this file's build.command scoped here.
 
 [build]
-  command = "npm run build --workspace=apps/marketing"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
