@@ -1,0 +1,13 @@
+# Netlify: Next.js 15 App Router site (separate Netlify site from apps/marketing).
+# This site's "Base directory" must be set to "apps/staff" in the Netlify site
+# settings, with its own subdomain (see design doc Open Question on staff/admin
+# subdomain naming).
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

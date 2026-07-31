@@ -1,5 +1,9 @@
 # Netlify: static Vite app + serverless contact API
 # https://docs.netlify.com/configure-builds/file-based-configuration/
+#
+# Monorepo note: this site's "Base directory" must be set to "apps/marketing" in the
+# Netlify site settings (Build & deploy). Netlify auto-detects the npm workspaces root
+# and installs from the repo root, then runs this file's build.command scoped here.
 
 [build]
   command = "npm run build"

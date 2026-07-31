@@ -1,0 +1,195 @@
+// Bubble Barrel Staff Identity Platform — Plan A (Staff Identity + RBAC + Audit)
+//
+// RBAC: `Employee.role` is a simple staff|admin enum for Plan A (deferred the full
+// Role/Permission/RolePermission graph — see TODOS.md "Migrate staff/admin enum to
+// full DB-driven RBAC graph"). Do not add Role/Permission tables here without first
+// reading that TODO — Plan B/C may or may not actually need them.
+//
+// Future modules (Attendance, Assets, NFC/RFID, biometrics, CMS, Leads, Config,
+// multi-property analytics) are explicitly OUT of scope for this schema. Do not add
+// their tables speculatively — see TODOS.md and the design doc's "Future Compatibility"
+// section for what's deferred and why.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (Supavisor, port 6543) — app runtime queries
+  directUrl = env("DIRECT_URL")   // direct connection — migrations only
+}
+
+// ── Better Auth models (DB-backed sessions — see design doc Finding 1) ─────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+  employee Employee?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ── Staff identity domain ───────────────────────────────────────────────────────────
+
+enum EmployeeRole {
+  STAFF
+  ADMIN
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE // "FORMER EMPLOYEE" on the public verification page
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("department")
+}
+
+model Employee {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  staffNumber String @unique // "BB-260001" — see StaffNumberSequence below
+
+  firstName  String
+  lastName   String
+  middleName String?
+  email      String  @unique
+  phone      String?
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  jobTitle       String?
+  employmentType EmploymentType?
+
+  profilePhotoUrl String?
+  bloodGroup      String?
+
+  emergencyContactName  String?
+  emergencyContactPhone String?
+
+  employmentStatus EmploymentStatus @default(ACTIVE)
+  dateJoined       DateTime         @default(now())
+
+  role EmployeeRole @default(STAFF)
+
+  // Durable unless explicitly regenerated (audited action) — see design doc Success Criteria.
+  verificationToken String @unique @default(uuid())
+
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime? // soft delete
+
+  auditLogs AuditLog[]
+
+  @@index([employmentStatus])
+  @@index([departmentId])
+  @@map("employee")
+}
+
+// Backing sequence for staffNumber allocation (Postgres native sequence — atomic,
+// no read-then-increment race). Created via raw SQL in the initial migration
+// (Prisma's schema DSL has no native `CREATE SEQUENCE` support), then read with
+// `nextval('staff_number_seq')` inside the same transaction as employee creation.
+// Rolled-back inserts burn a number permanently — accepted as normal (see eng review).
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String? // User.id of who performed the action; null for system actions
+  action     String // e.g. "employee.create", "employee.qr_regenerate", "auth.login"
+  entityType String // e.g. "Employee"
+  entityId   String? // e.g. Employee.id
+  diff       Json? // before/after snapshot, action-specific
+  createdAt  DateTime @default(now())
+
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  employeeId String?
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("audit_log")
+}
+
+// Supabase-backed rate limiting (public /verify/[token] endpoint) — an in-memory
+// counter wouldn't survive Netlify's serverless cold starts across instances.
+// Incremented atomically via `UPDATE ... SET count = count + 1 ... RETURNING count`.
+model RateLimit {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. `verify:{ipHash}`
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+
+  @@index([key, windowStart])
+  @@map("rate_limit")
+}

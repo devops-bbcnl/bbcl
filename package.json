@@ -1,0 +1,26 @@
+{
+  "name": "bubblebarrel",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "_comment_dependencies": "react/react-dom pinned here (matching apps/staff, the Next.js app) so the workspace root — where `next` itself hoists to, since only apps/staff depends on it — resolves the SAME React apps/staff's code uses. Without this, npm hoists `next` to root but leaves root's implicit react resolution ambiguous vs. apps/marketing's react@18, causing next build to bundle two react-dom copies across one render tree (Minified React error #31 on the built-in /404 /_error page). apps/marketing keeps its own nested react@18 copy since its version differs from this pin. Known npm-workspaces issue: https://github.com/vercel/turborepo/issues/9335",
+  "dependencies": {
+    "react": "19.1.9",
+    "react-dom": "19.1.9"
+  },
+  "scripts": {
+    "dev:marketing": "npm run dev --workspace=apps/marketing",
+    "dev:staff": "npm run dev --workspace=apps/staff",
+    "build:marketing": "npm run build --workspace=apps/marketing",
+    "build:staff": "npm run build --workspace=apps/staff",
+    "test:marketing": "npm run test --workspace=apps/marketing",
+    "test:staff": "npm run test --workspace=apps/staff",
+    "test": "npm run test:marketing && npm run test:staff"
+  }
+}
