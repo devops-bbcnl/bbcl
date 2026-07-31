@@ -4,7 +4,7 @@
 # subdomain naming).
 
 [build]
-  command = "npm run build"
+  command = "npm run build --workspace=apps/staff"
 
 [build.environment]
   NODE_VERSION = "20"
